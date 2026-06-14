@@ -1,65 +1,104 @@
-import Image from "next/image";
+import Link from "next/link";
+import PaperList from "@/components/PaperList";
+import RefreshButton from "@/components/RefreshButton";
+import { getDashboard } from "@/lib/data";
+import { timeAgo } from "@/lib/time";
 
-export default function Home() {
+// Cold loads hit the network (rate-limited); never statically cache this page.
+export const dynamic = "force-dynamic";
+
+export default async function Dashboard() {
+  const data = await getDashboard();
+  const isEmpty = data.researchers.length === 0 && data.subjects.length === 0;
+  // Treats missing, empty, and whitespace-only values as "no key".
+  const noKey = !process.env.SEMANTIC_SCHOLAR_API_KEY?.trim();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-12">
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="font-serif text-3xl">Latest research</h1>
+          <p className="mt-1 text-xs text-faint">Updated {timeAgo(data.generatedAt)}</p>
+        </div>
+        <RefreshButton />
+      </div>
+
+      {noKey ? (
+        <p className="rounded border border-line bg-accent-soft px-4 py-3 text-sm text-muted">
+          No Semantic Scholar API key set. Add{" "}
+          <code className="font-mono text-xs">SEMANTIC_SCHOLAR_API_KEY</code> to{" "}
+          <code className="font-mono text-xs">.env.local</code> and restart for reliable results.
+        </p>
+      ) : data.partial ? (
+        <p className="rounded border border-line bg-accent-soft px-4 py-3 text-sm text-muted">
+          Some sections couldn&apos;t be loaded — Semantic Scholar rate-limited the
+          request. If you just added or changed your API key, restart the dev server.
+          Otherwise wait a moment and press <span className="font-medium">Refresh</span>.
+        </p>
+      ) : null}
+
+      {isEmpty ? (
+        <div className="rounded border border-line px-6 py-10 text-center">
+          <p className="font-serif text-lg">Your watchlist is empty.</p>
+          <p className="mt-2 text-sm text-muted">
+            Head to{" "}
+            <Link href="/manage" className="text-accent underline">
+              Manage
+            </Link>{" "}
+            to add researchers and subject areas.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      ) : null}
+
+      {data.researchers.length > 0 ? (
+        <section>
+          <h2 className="mb-4 border-b border-line pb-2 font-serif text-sm uppercase tracking-widest text-faint">
+            Researchers
+          </h2>
+          <div className="space-y-8">
+            {data.researchers.map((r) => (
+              <div key={r.author.authorId}>
+                <Link
+                  href={`/researcher/${r.author.authorId}`}
+                  className="font-serif text-lg hover:text-accent transition-colors"
+                >
+                  {r.author.name}
+                </Link>
+                {r.error ? (
+                  <p className="py-3 text-sm text-faint">Couldn&apos;t load — rate limited.</p>
+                ) : (
+                  <PaperList papers={r.papers} empty="No recent publications found." />
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {data.subjects.length > 0 ? (
+        <section>
+          <h2 className="mb-4 border-b border-line pb-2 font-serif text-sm uppercase tracking-widest text-faint">
+            Subjects
+          </h2>
+          <div className="space-y-8">
+            {data.subjects.map((s) => (
+              <div key={s.subject.id}>
+                <Link
+                  href={`/subject/${s.subject.id}`}
+                  className="font-serif text-lg hover:text-accent transition-colors"
+                >
+                  {s.subject.label}
+                </Link>
+                {s.error ? (
+                  <p className="py-3 text-sm text-faint">Couldn&apos;t load — rate limited.</p>
+                ) : (
+                  <PaperList papers={s.papers} empty="No recent publications found." />
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
