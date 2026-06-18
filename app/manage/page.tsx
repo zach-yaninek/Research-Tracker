@@ -58,7 +58,7 @@ export default function ManagePage() {
         <SubjectsTab subjects={subjects} onChange={loadLists} />
       )}
 
-      <Recommendations researchers={researchers} subjects={subjects} onChange={loadLists} />
+      <Recommendations tab={tab} researchers={researchers} subjects={subjects} onChange={loadLists} />
     </div>
   );
 }
@@ -341,10 +341,12 @@ function SubjectsTab({
 // ---------- Recommendations ----------
 
 function Recommendations({
+  tab,
   researchers,
   subjects,
   onChange,
 }: {
+  tab: Tab;
   researchers: Researcher[];
   subjects: Subject[];
   onChange: () => void;
@@ -403,7 +405,7 @@ function Recommendations({
       </div>
       {loading ? <p className="text-sm text-faint">Finding related work…</p> : null}
 
-      {recs && recs.researchers.length > 0 ? (
+      {tab === "researchers" && recs && recs.researchers.length > 0 ? (
         <div>
           <p className="mb-2 text-xs uppercase tracking-wide text-faint">
             Related researchers (frequent co-authors)
@@ -420,7 +422,7 @@ function Recommendations({
         </div>
       ) : null}
 
-      {recs && recs.subjects.length > 0 ? (
+      {tab === "subjects" && recs && recs.subjects.length > 0 ? (
         <div>
           <p className="mb-2 text-xs uppercase tracking-wide text-faint">
             Related subjects (common fields)
@@ -433,7 +435,9 @@ function Recommendations({
         </div>
       ) : null}
 
-      {recs && recs.researchers.length === 0 && recs.subjects.length === 0 && !loading ? (
+      {recs &&
+      !loading &&
+      (tab === "researchers" ? recs.researchers.length === 0 : recs.subjects.length === 0) ? (
         <p className="text-sm text-faint">No suggestions yet — add a few researchers first.</p>
       ) : null}
     </section>
