@@ -13,11 +13,11 @@ academic aesthetic, server-side API proxy with rate limiting and caching.
 
 | Dashboard | Researcher profile |
 | --- | --- |
-| ![Dashboard — latest publications per watched researcher and subject](docs/screenshots/dashboard.jpg) | ![Researcher profile — metrics and publications](docs/screenshots/researcher.jpg) |
+| ![Dashboard — latest publications per watched researcher and subject](docs/screenshots/dashboard.png) | ![Researcher profile — metrics and publications](docs/screenshots/researcher.png) |
 
 | Subject area | Manage watchlists |
 | --- | --- |
-| ![Subject page — recent research and most-cited papers](docs/screenshots/subject.jpg) | ![Manage page — edit lists, search, recommendations](docs/screenshots/manage.jpg) |
+| ![Subject page — recent research and most-cited papers](docs/screenshots/subject.png) | ![Manage page — edit lists, search, recommendations](docs/screenshots/manage.png) |
 
 <!-- Drop PNGs into docs/screenshots/ with the filenames above. -->
 
