@@ -30,7 +30,9 @@ export default function RootLayout({
       lang="en"
       className={`${serif.variable} ${sans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* Browser extensions (e.g. Grammarly) inject attributes on <body>
+          before hydration; suppress the resulting attribute mismatch warning. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <header className="border-b border-line">
           <div className="mx-auto w-full max-w-3xl px-6 py-5 flex items-baseline justify-between">
             <Link href="/" className="font-serif text-xl tracking-tight">

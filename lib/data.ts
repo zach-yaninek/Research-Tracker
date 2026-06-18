@@ -30,6 +30,16 @@ export function clearDataCache(): void {
   for (const prefix of CACHE_PREFIXES) cacheDeleteByPrefix(prefix);
 }
 
+/**
+ * Warm the dashboard cache for the whole watchlist. Cold entries are fetched and
+ * stored; stale entries are refreshed in the background (via the SWR cache).
+ * Used by the startup/interval warm-up and the manual refresh so visitors never
+ * pay for the network round-trips. Errors are swallowed by the caller.
+ */
+export async function warmAll(): Promise<void> {
+  await getDashboard();
+}
+
 // ---- Researchers ----
 
 export function dashboardAuthors(ids: string[]): Promise<AuthorDetail[]> {
@@ -85,31 +95,35 @@ export async function getDashboard(perSection = 3): Promise<DashboardData> {
     }
   }
 
-  // Fetch each section independently so one rate-limited request can't take
-  // down the whole dashboard — render what succeeds, flag what doesn't.
-  const researcherSections = [];
-  for (const r of researchers) {
-    const author =
-      authorById.get(r.authorId) ?? ({ authorId: r.authorId, name: r.name } as AuthorDetail);
-    try {
-      const papers = await researcherPapers(r.authorId);
-      researcherSections.push({ author, papers: papers.slice(0, perSection) });
-    } catch {
-      partial = true;
-      researcherSections.push({ author, papers: [], error: true });
-    }
-  }
+  // Fetch sections concurrently; each resolves independently so one rate-limited
+  // request can't take down the whole dashboard — render what succeeds, flag
+  // what doesn't. (The rate limiter still serializes the underlying network
+  // calls; on a warm cache these are instant SQLite reads.)
+  const researcherSections = await Promise.all(
+    researchers.map(async (r) => {
+      const author =
+        authorById.get(r.authorId) ?? ({ authorId: r.authorId, name: r.name } as AuthorDetail);
+      try {
+        const papers = await researcherPapers(r.authorId);
+        return { author, papers: papers.slice(0, perSection) };
+      } catch {
+        partial = true;
+        return { author, papers: [], error: true };
+      }
+    })
+  );
 
-  const subjectSections = [];
-  for (const s of subjects) {
-    try {
-      const papers = await subjectLatest(s, perSection);
-      subjectSections.push({ subject: s, papers: papers.slice(0, perSection) });
-    } catch {
-      partial = true;
-      subjectSections.push({ subject: s, papers: [], error: true });
-    }
-  }
+  const subjectSections = await Promise.all(
+    subjects.map(async (s) => {
+      try {
+        const papers = await subjectLatest(s, perSection);
+        return { subject: s, papers: papers.slice(0, perSection) };
+      } catch {
+        partial = true;
+        return { subject: s, papers: [], error: true };
+      }
+    })
+  );
 
   return {
     researchers: researcherSections,
