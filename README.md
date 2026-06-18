@@ -1,4 +1,6 @@
-# Research Tracker
+Local web app designed to track publications from researchers and subject areas of interest.
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 A local, single-user web app that surfaces the latest publications from a personal watchlist of
 **researchers** and **subject areas**, built on the
